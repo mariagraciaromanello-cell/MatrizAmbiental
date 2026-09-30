@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matriz Ambiental — Evaluación preliminar de impactos</title>
+<link rel="stylesheet" href="styles.css">
+<script src="script.js" defer></script>
+</head>
+<body>
+<header class="app-header">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 48 48" role="img" aria-label="Logotipo Matriz Ambiental">
+      <circle cx="24" cy="24" r="21" fill="#14442b"/>
+      <path d="M24 9c-5 6-8 10-8 14a8 8 0 0 0 16 0c0-4-3-8-8-14z" fill="#2d8fd0"/>
+      <path d="M24 40V26M24 30c-5 0-8-3-8-7 5 0 8 3 8 7zM24 28c4 0 7-2 7-6-4 0-7 2-7 6z" fill="none" stroke="#9be3b0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <h1>MATRIZ AMBIENTAL</h1>
+      <p>Evaluación preliminar de impactos</p>
+    </div>
+  </div>
+  <div class="toolbar">
+    <button type="button" id="saveBtn" class="btn btn-primary">Guardar proyecto</button>
+    <button type="button" id="newBtn" class="btn btn-secondary">Nuevo proyecto</button>
+  </div>
+</header>
+
+<div class="disclaimer" role="note">
+  <strong>Evaluación preliminar orientativa.</strong> Esta herramienta no sustituye un Estudio de Impacto Ambiental, una evaluación profesional completa ni el cumplimiento de la normativa aplicable.
+</div>
+
+<nav class="steps" id="stepNav" aria-label="Etapas de la evaluación">
+  <button type="button" data-step="1"><span class="num">1</span> Proyecto</button>
+  <button type="button" data-step="2"><span class="num">2</span> Factores</button>
+  <button type="button" data-step="3"><span class="num">3</span> Acciones</button>
+  <button type="button" data-step="4"><span class="num">4</span> Matriz</button>
+  <button type="button" data-step="5"><span class="num">5</span> Resumen</button>
+</nav>
+
+<div id="status" class="status" role="status" aria-live="polite"></div>
+
+<main>
+  <section class="step" id="step1" aria-labelledby="h1">
+    <h2 id="h1" tabindex="-1">1. Proyecto</h2>
+    <form id="projectForm" class="form-grid" novalidate>
+      <div class="field wide">
+        <label for="pName">Nombre del proyecto *</label>
+        <input type="text" id="pName" maxlength="150" autocomplete="off">
+      </div>
+      <div class="field wide">
+        <label for="pLocation">Ubicación</label>
+        <input type="text" id="pLocation" maxlength="150" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="pType">Tipo de proyecto</label>
+        <select id="pType">
+          <option value="industrial">Industrial</option>
+          <option value="agro">Agropecuario / agroindustrial</option>
+          <option value="minero">Minero</option>
+          <option value="urbano">Urbanístico / inmobiliario</option>
+          <option value="infra">Infraestructura</option>
+          <option value="energia">Energético</option>
+          <option value="residuos">Gestión de residuos</option>
+          <option value="agua">Agua / saneamiento</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="pStage">Etapa</label>
+        <select id="pStage">
+          <option value="construccion">Construcción</option>
+          <option value="operacion">Funcionamiento / operación</option>
+          <option value="ampliacion">Ampliación / modificación</option>
+          <option value="cierre">Cierre / abandono</option>
+        </select>
+      </div>
+      <div class="field wide">
+        <label for="pProfile">Perfil ambiental</label>
+        <select id="pProfile">
+          <option value="larioja">La Rioja</option>
+          <option value="generico">Genérico</option>
+          <option value="personalizado">Personalizado</option>
+        </select>
+        <p class="hint" id="profileHint"></p>
+      </div>
+      <div class="field wide">
+        <label for="pDesc">Descripción breve del proyecto</label>
+        <textarea id="pDesc" rows="4" maxlength="1500"></textarea>
+      </div>
+      <p id="projectError" class="error" role="alert" hidden></p>
+    </form>
+  </section>
+
+  <section class="step" id="step2" aria-labelledby="h2" hidden>
+    <h2 id="h2" tabindex="-1">2. Factores ambientales</h2>
+    <p class="lead">Los factores propuestos son sugerencias: seleccioná, editá, eliminá o agregá los que correspondan a tu evaluación.</p>
+    <div class="actions-row">
+      <button type="button" id="addFactorBtn" class="btn btn-primary">+ Agregar factor</button>
+      <button type="button" id="resetFactorsBtn" class="btn btn-secondary">Restaurar sugerencias</button>
+    </div>
+    <div id="factorsList"></div>
+  </section>
+
+  <section class="step" id="step3" aria-labelledby="h3" hidden>
+    <h2 id="h3" tabindex="-1">3. Acciones del proyecto</h2>
+    <p class="lead">Las acciones sugeridas dependen del tipo de proyecto y no son obligatorias.</p>
+    <div class="actions-row">
+      <button type="button" id="addActionBtn" class="btn btn-primary">+ Agregar acción</button>
+      <button type="button" id="resetActionsBtn" class="btn btn-secondary">Restaurar sugerencias</button>
+    </div>
+    <div id="actionsList"></div>
+  </section>
+
+  <section class="step" id="step4" aria-labelledby="h4" hidden>
+    <h2 id="h4" tabindex="-1">4. Matriz acción × factor ambiental</h2>
+    <p class="lead">Una celda vacía significa «sin interacción identificada». Tocá una celda para crear o editar una interacción.</p>
+    <ul class="legend" aria-label="Referencias">
+      <li><span class="sw sw-neg"></span> Impacto negativo</li>
+      <li><span class="sw sw-pos"></span> Impacto positivo</li>
+      <li><span class="sw sw-empty"></span> Sin interacción identificada</li>
+    </ul>
+    <p id="matrixEmpty" class="empty" hidden>Seleccioná al menos un factor (paso 2) y una acción (paso 3) para construir la matriz.</p>
+    <div class="matrix-wrap" id="matrixWrap" tabindex="0" aria-label="Matriz de interacciones, desplazable">
+      <table id="matrixTable"></table>
+    </div>
+  </section>
+
+  <section class="step" id="step5" aria-labelledby="h5" hidden>
+    <h2 id="h5" tabindex="-1">5. Resumen</h2>
+    <div class="actions-row no-print">
+      <button type="button" id="csvBtn" class="btn btn-primary">Descargar CSV</button>
+      <button type="button" id="printBtn" class="btn btn-secondary">Imprimir / Guardar como PDF</button>
+    </div>
+    <h3>Datos del proyecto</h3>
+    <dl id="sumProject" class="dl"></dl>
+    <h3>Resultados</h3>
+    <div id="sumCounts" class="counts"></div>
+    <h3>Factores con mayor número de interacciones</h3>
+    <div id="sumBars" class="bars"></div>
+    <h3>Detalle de interacciones</h3>
+    <div class="table-scroll">
+      <table class="data" id="sumTable">
+        <thead><tr><th>Acción</th><th>Factor</th><th>Naturaleza</th><th>Valor preliminar</th><th>Nivel</th><th>Observaciones</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="note">Valor preliminar = Intensidad × Extensión × Duración × Reversibilidad × Probabilidad. Niveles orientativos: Bajo 1–124, Moderado 125–624, Alto 625–1874, Muy alto 1875 o más. La escala no es una metodología normativa oficial y podrá ser configurable en futuras versiones.</p>
+  </section>
+</main>
+
+<div class="pager no-print">
+  <button type="button" id="prevBtn" class="btn btn-secondary">← Anterior</button>
+  <button type="button" id="nextBtn" class="btn btn-primary">Siguiente →</button>
+</div>
+
+<div class="modal" id="itemModal" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="itemTitle">
+    <h2 id="itemTitle">Agregar</h2>
+    <form id="itemForm" novalidate>
+      <div class="field">
+        <label for="itemName">Nombre</label>
+        <input type="text" id="itemName" maxlength="120" autocomplete="off">
+      </div>
+      <div class="field" id="itemGroupWrap">
+        <label for="itemGroup">Grupo</label>
+        <select id="itemGroup"></select>
+      </div>
+      <p id="itemError" class="error" role="alert" hidden></p>
+      <div class="modal-actions">
+        <button type="button" id="itemCancel" class="btn btn-secondary">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Aceptar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="impactModal" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="impactTitle">
+    <h2 id="impactTitle">Ficha del impacto</h2>
+    <dl class="dl compact">
+      <dt>Acción</dt><dd id="impactAction"></dd>
+      <dt>Factor</dt><dd id="impactFactor"></dd>
+    </dl>
+    <form id="impactForm" novalidate>
+      <fieldset class="field">
+        <legend>Naturaleza</legend>
+        <label class="radio"><input type="radio" name="nature" value="neg"> Negativo</label>
+        <label class="radio"><input type="radio" name="nature" value="pos"> Positivo</label>
+      </fieldset>
+      <div id="criteria" class="criteria"></div>
+      <div class="field">
+        <label for="iObs">Observaciones</label>
+        <textarea id="iObs" rows="3" maxlength="1000"></textarea>
+      </div>
+      <div class="preview" id="impactPreview" aria-live="polite"></div>
+      <p class="note">Escala orientativa, no normativa. Es un valor preliminar sujeto al criterio profesional.</p>
+      <p id="impactError" class="error" role="alert" hidden></p>
+      <div class="modal-actions">
+        <button type="button" id="impactDelete" class="btn btn-danger" hidden>Eliminar interacción</button>
+        <button type="button" id="impactCancel" class="btn btn-secondary">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar interacción</button>
+      </div>
+    </form>
+  </div>
+</div>
+</body>
+</html>
